@@ -1,21 +1,28 @@
 <?php
-session_start();
 require_once 'connexion.php';
+session_start();
 
-// Vérifier si l'utilisateur est connecté
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+// Protection admin / super_admin
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'] ?? '', ['admin', 'super_admin'])) {
+    header("Location: login.php");
     exit();
 }
 
-$message = '';
+// Notifications (comme dans toutes les pages admin)
+$stmt_notif = $pdo->query("
+    SELECT id, type, titre, message, lien, lue, created_at 
+    FROM notifications 
+    ORDER BY created_at DESC 
+    LIMIT 8
+");
+$notifications = $stmt_notif->fetchAll(PDO::FETCH_ASSOC) ?? [];
 
 // Gestion de l'export
-if (isset($_GET['type']) && isset($_GET['format'])) {
-    $type = $_GET['type'];
-    $format = $_GET['format'];
-    
-    // Définir les requêtes selon le type
+$type = $_GET['type'] ?? '';
+$format = $_GET['format'] ?? '';
+$message = '';
+
+if ($type && $format) {
     switch ($type) {
         case 'livres':
             $query = "SELECT 
@@ -94,129 +101,83 @@ if (isset($_GET['type']) && isset($_GET['format'])) {
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             // Journaliser l'export
-            $stmt = $pdo->prepare("
+            $log = $pdo->prepare("
                 INSERT INTO logs_audit (table_name, action, user_id, user_type, ip_address)
-                VALUES ('export', 'EXPORT', :user_id, 'staff', :ip_address)
+                VALUES ('export', 'EXPORT', ?, 'staff', ?)
             ");
-            $stmt->execute([
-                ':user_id' => $_SESSION['user_id'],
-                ':ip_address' => $_SERVER['REMOTE_ADDR']
-            ]);
+            $log->execute([$_SESSION['user_id'], $_SERVER['REMOTE_ADDR']]);
             
             // Générer le fichier selon le format
             switch ($format) {
                 case 'csv':
-                    exportCSV($data, $filename);
-                    break;
+                    header('Content-Type: text/csv; charset=utf-8');
+                    header('Content-Disposition: attachment; filename="' . $filename . '_' . date('Y-m-d') . '.csv"');
+                    
+                    $output = fopen('php://output', 'w');
+                    if (!empty($data)) fputcsv($output, array_keys($data[0]));
+                    foreach ($data as $row) fputcsv($output, $row);
+                    fclose($output);
+                    exit();
+                    
                 case 'excel':
-                    exportExcel($data, $filename);
-                    break;
+                    header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+                    header('Content-Disposition: attachment; filename="' . $filename . '_' . date('Y-m-d') . '.xls"');
+                    
+                    echo '<table border="1">';
+                    if (!empty($data)) {
+                        echo '<tr>';
+                        foreach (array_keys($data[0]) as $header) echo '<th>' . htmlspecialchars($header) . '</th>';
+                        echo '</tr>';
+                    }
+                    foreach ($data as $row) {
+                        echo '<tr>';
+                        foreach ($row as $cell) echo '<td>' . htmlspecialchars($cell) . '</td>';
+                        echo '</tr>';
+                    }
+                    echo '</table>';
+                    exit();
+                    
                 case 'pdf':
-                    exportPDF($data, $filename, $type);
-                    break;
+                    // Version simplifiée (HTML → PDF via navigateur)
+                    header('Content-Type: application/pdf');
+                    header('Content-Disposition: attachment; filename="' . $filename . '_' . date('Y-m-d') . '.pdf"');
+                    
+                    $html = '<html><head><style>
+                        body { font-family: Arial, sans-serif; }
+                        h1 { color: #333; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th { background-color: #f2f2f2; padding: 8px; border: 1px solid #ddd; }
+                        td { padding: 8px; border: 1px solid #ddd; }
+                    </style></head><body>';
+                    $html .= '<h1>' . ucfirst($type) . ' - BiblioTech</h1>';
+                    $html .= '<p>Export généré le: ' . date('d/m/Y H:i') . '</p>';
+                    
+                    if (!empty($data)) {
+                        $html .= '<table>';
+                        $html .= '<tr>';
+                        foreach (array_keys($data[0]) as $header) $html .= '<th>' . htmlspecialchars($header) . '</th>';
+                        $html .= '</tr>';
+                        foreach ($data as $row) {
+                            $html .= '<tr>';
+                            foreach ($row as $cell) $html .= '<td>' . htmlspecialchars($cell) . '</td>';
+                            $html .= '</tr>';
+                        }
+                        $html .= '</table>';
+                    } else {
+                        $html .= '<p>Aucune donnée à exporter.</p>';
+                    }
+                    $html .= '</body></html>';
+                    
+                    echo $html;
+                    exit();
+                    
                 default:
                     $message = "Format non supporté.";
             }
         } catch (PDOException $e) {
-            $message = "Erreur lors de l'export: " . $e->getMessage();
+            $message = "Erreur lors de l'export : " . $e->getMessage();
         }
     }
-}
-
-// Fonction d'export CSV
-function exportCSV($data, $filename) {
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $filename . '_' . date('Y-m-d') . '.csv"');
-    
-    $output = fopen('php://output', 'w');
-    
-    // En-têtes
-    if (!empty($data)) {
-        fputcsv($output, array_keys($data[0]));
-    }
-    
-    // Données
-    foreach ($data as $row) {
-        fputcsv($output, $row);
-    }
-    
-    fclose($output);
-    exit();
-}
-
-// Fonction d'export Excel (simplifiée en CSV avec en-têtes Excel)
-function exportExcel($data, $filename) {
-    header('Content-Type: application/vnd.ms-excel; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $filename . '_' . date('Y-m-d') . '.xls"');
-    
-    echo '<table border="1">';
-    
-    // En-têtes
-    if (!empty($data)) {
-        echo '<tr>';
-        foreach (array_keys($data[0]) as $header) {
-            echo '<th>' . htmlspecialchars($header) . '</th>';
-        }
-        echo '</tr>';
-    }
-    
-    // Données
-    foreach ($data as $row) {
-        echo '<tr>';
-        foreach ($row as $cell) {
-            echo '<td>' . htmlspecialchars($cell) . '</td>';
-        }
-        echo '</tr>';
-    }
-    
-    echo '</table>';
-    exit();
-}
-
-// Fonction d'export PDF (requiert TCPDF ou autre bibliothèque)
-function exportPDF($data, $filename, $type) {
-    // Note: Cette implémentation nécessite l'installation de TCPDF
-    // Voici une version simplifiée qui génère du HTML
-    
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="' . $filename . '_' . date('Y-m-d') . '.pdf"');
-    
-    $html = '<html><head><style>
-        body { font-family: Arial, sans-serif; }
-        h1 { color: #333; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { background-color: #f2f2f2; padding: 8px; border: 1px solid #ddd; }
-        td { padding: 8px; border: 1px solid #ddd; }
-    </style></head><body>';
-    
-    $html .= '<h1>' . ucfirst($type) . ' - Bibliotech</h1>';
-    $html .= '<p>Export généré le: ' . date('d/m/Y H:i') . '</p>';
-    
-    if (!empty($data)) {
-        $html .= '<table>';
-        $html .= '<tr>';
-        foreach (array_keys($data[0]) as $header) {
-            $html .= '<th>' . htmlspecialchars($header) . '</th>';
-        }
-        $html .= '</tr>';
-        
-        foreach ($data as $row) {
-            $html .= '<tr>';
-            foreach ($row as $cell) {
-                $html .= '<td>' . htmlspecialchars($cell) . '</td>';
-            }
-            $html .= '</tr>';
-        }
-        $html .= '</table>';
-    } else {
-        $html .= '<p>Aucune donnée à exporter.</p>';
-    }
-    
-    $html .= '</body></html>';
-    
-    // En production, utiliser TCPDF ou DOMPDF pour générer un vrai PDF
-    echo $html;
-    exit();
 }
 ?>
 
@@ -225,108 +186,359 @@ function exportPDF($data, $filename, $type) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Export de données - Bibliotech</title>
+    <title>Export de Données - BiblioTech</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .message { padding: 10px; margin: 10px 0; border-radius: 5px; }
-        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .export-section { margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
-        .export-section h3 { margin-top: 0; color: #007bff; }
-        .format-buttons { margin-top: 10px; }
-        .btn { display: inline-block; padding: 8px 16px; margin-right: 10px; text-decoration: none; border-radius: 4px; }
-        .btn-csv { background-color: #28a745; color: white; }
-        .btn-excel { background-color: #17a2b8; color: white; }
-        .btn-pdf { background-color: #dc3545; color: white; }
-        .btn:hover { opacity: 0.9; }
+        :root {
+            --primary: #1e3a5f;
+            --primary-light: #2d5a87;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-700: #334155;
+            --light: #ffffff;
+            --danger: #dc2626;
+            --success: #10b981;
+            --radius: 10px;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--gray-100); color: var(--gray-700); margin: 0; min-height: 100vh; }
+
+        .admin-header {
+            background: var(--light);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 16px 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dashboard-link { color: var(--primary); font-weight: 600; text-decoration: none; }
+
+        .main-content {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .content-section {
+            background: var(--light);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .section-title {
+            margin: 0;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .export-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+        }
+
+        .export-card {
+            background: var(--gray-100);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .export-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .export-buttons {
+            margin-top: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-csv { background: #28a745; color: white; }
+        .btn-excel { background: #17a2b8; color: white; }
+        .btn-pdf { background: #dc3545; color: white; }
+
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .alert-danger {
+            background: rgba(220,38,38,0.1);
+            color: var(--danger);
+            padding: 1rem;
+            border-radius: var(--radius);
+            margin: 1rem 2rem;
+            text-align: center;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+            margin: 2rem auto;
+            display: block;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Export de données</h1>
-        
-        <?php if ($message): ?>
-            <div class="message error">
-                <?php echo $message; ?>
-            </div>
-        <?php endif; ?>
-        
-        <p>Exportez les données de la bibliothèque dans différents formats.</p>
-        
-        <!-- Liste des livres -->
-        <div class="export-section">
-            <h3>📚 Liste des livres</h3>
-            <p>Export de tous les livres du catalogue avec leurs statistiques.</p>
-            <div class="format-buttons">
-                <a href="?type=livres&format=csv" class="btn btn-csv">CSV</a>
-                <a href="?type=livres&format=excel" class="btn btn-excel">Excel</a>
-                <a href="?type=livres&format=pdf" class="btn btn-pdf">PDF</a>
-            </div>
+
+    <!-- HEADER -->
+    <div class="admin-header">
+        <div class="admin-header-left">
+            <a href="admin_dashboard.php" class="dashboard-link">
+                <i class="fas fa-home"></i> Retour au Dashboard
+            </a>
         </div>
-        
-        <!-- Liste des membres -->
-        <div class="export-section">
-            <h3>👥 Liste des membres</h3>
-            <p>Export de tous les membres avec leurs emprunts en cours et amendes.</p>
-            <div class="format-buttons">
-                <a href="?type=membres&format=csv" class="btn btn-csv">CSV</a>
-                <a href="?type=membres&format=excel" class="btn btn-excel">Excel</a>
-                <a href="?type=membres&format=pdf" class="btn btn-pdf">PDF</a>
-            </div>
-        </div>
-        
-        <!-- Historique des emprunts -->
-        <div class="export-section">
-            <h3>📖 Historique des emprunts (6 mois)</h3>
-            <p>Export des emprunts des 6 derniers mois.</p>
-            <div class="format-buttons">
-                <a href="?type=emprunts&format=csv" class="btn btn-csv">CSV</a>
-                <a href="?type=emprunts&format=excel" class="btn btn-excel">Excel</a>
-                <a href="?type=emprunts&format=pdf" class="btn btn-pdf">PDF</a>
-            </div>
-        </div>
-        
-        <!-- Rapports statistiques -->
-        <div class="export-section">
-            <h3>📊 Rapports statistiques (30 jours)</h3>
-            <p>Export des statistiques journalières.</p>
-            <div class="format-buttons">
-                <a href="?type=rapports&format=csv" class="btn btn-csv">CSV</a>
-                <a href="?type=rapports&format=excel" class="btn btn-excel">Excel</a>
-                <a href="?type=rapports&format=pdf" class="btn btn-pdf">PDF</a>
-            </div>
-        </div>
-        
-        <!-- Logs d'audit -->
-        <div class="export-section">
-            <h3>🔍 Logs d'audit (7 jours)</h3>
-            <p>Export des logs d'activité système.</p>
-            <div class="format-buttons">
-                <a href="?type=logs&format=csv" class="btn btn-csv">CSV</a>
-                <a href="?type=logs&format=excel" class="btn btn-excel">Excel</a>
-                <a href="?type=logs&format=pdf" class="btn btn-pdf">PDF</a>
-            </div>
-        </div>
-        
-        <!-- Export personnalisé -->
-        <div class="export-section">
-            <h3>⚙️ Export personnalisé</h3>
-            <form method="GET" action="export_custom.php" style="margin-top: 15px;">
-                <div style="margin-bottom: 10px;">
-                    <label for="custom_query">Requête SQL (réservé aux administrateurs):</label><br>
-                    <textarea id="custom_query" name="query" rows="4" style="width: 100%; font-family: monospace;"></textarea>
+
+        <div class="admin-header-right">
+            <a href="#" class="notifications-bell" title="Notifications">
+                <i class="fas fa-bell"></i>
+                <?php if (count($notifications)): ?>
+                    <span class="notification-badge"><?= count($notifications) ?></span>
+                <?php endif; ?>
+            </a>
+
+            <div class="user-profile">
+                <div class="user-avatar">
+                    <?= strtoupper(substr($_SESSION['user_name'] ?? 'A', 0, 1)) ?>
                 </div>
-                <div>
-                    <select name="format" style="padding: 5px; margin-right: 10px;">
-                        <option value="csv">CSV</option>
-                        <option value="excel">Excel</option>
-                    </select>
-                    <button type="submit" style="padding: 5px 15px;">Exporter</button>
+                <div class="user-info">
+                    <strong><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin') ?></strong>
+                    <span>Administrateur</span>
                 </div>
-            </form>
+                <a href="logout.php" class="logout-link" title="Déconnexion">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
         </div>
-        
-        <p><a href="index.php">← Retour au tableau de bord</a></p>
     </div>
+
+    <!-- CONTENU -->
+    <div class="main-content">
+
+        <section class="content-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fas fa-file-export"></i>
+                    Export de Données
+                </div>
+            </div>
+
+            <?php if ($message): ?>
+                <div class="alert-danger"><?= htmlspecialchars($message) ?></div>
+            <?php endif; ?>
+
+            <div class="export-grid">
+                <!-- Livres -->
+                <div class="export-card">
+                    <h3><i class="fas fa-book"></i> Liste des livres</h3>
+                    <p>Export du catalogue complet avec statistiques.</p>
+                    <div class="export-buttons">
+                        <a href="?type=livres&format=csv" class="btn btn-csv">CSV</a>
+                        <a href="?type=livres&format=excel" class="btn btn-excel">Excel</a>
+                        <a href="?type=livres&format=pdf" class="btn btn-pdf">PDF</a>
+                    </div>
+                </div>
+
+                <!-- Membres -->
+                <div class="export-card">
+                    <h3><i class="fas fa-users"></i> Liste des membres</h3>
+                    <p>Membres avec emprunts en cours et amendes.</p>
+                    <div class="export-buttons">
+                        <a href="?type=membres&format=csv" class="btn btn-csv">CSV</a>
+                        <a href="?type=membres&format=excel" class="btn btn-excel">Excel</a>
+                        <a href="?type=membres&format=pdf" class="btn btn-pdf">PDF</a>
+                    </div>
+                </div>
+
+                <!-- Emprunts -->
+                <div class="export-card">
+                    <h3><i class="fas fa-book-open"></i> Historique des emprunts (6 mois)</h3>
+                    <p>Emprunts récents avec détails.</p>
+                    <div class="export-buttons">
+                        <a href="?type=emprunts&format=csv" class="btn btn-csv">CSV</a>
+                        <a href="?type=emprunts&format=excel" class="btn btn-excel">Excel</a>
+                        <a href="?type=emprunts&format=pdf" class="btn btn-pdf">PDF</a>
+                    </div>
+                </div>
+
+                <!-- Rapports -->
+                <div class="export-card">
+                    <h3><i class="fas fa-chart-bar"></i> Rapports statistiques (30 jours)</h3>
+                    <p>Statistiques journalières.</p>
+                    <div class="export-buttons">
+                        <a href="?type=rapports&format=csv" class="btn btn-csv">CSV</a>
+                        <a href="?type=rapports&format=excel" class="btn btn-excel">Excel</a>
+                        <a href="?type=rapports&format=pdf" class="btn btn-pdf">PDF</a>
+                    </div>
+                </div>
+
+                <!-- Logs -->
+                <div class="export-card">
+                    <h3><i class="fas fa-history"></i> Logs d'audit (7 jours)</h3>
+                    <p>Activité système récente.</p>
+                    <div class="export-buttons">
+                        <a href="?type=logs&format=csv" class="btn btn-csv">CSV</a>
+                        <a href="?type=logs&format=excel" class="btn btn-excel">Excel</a>
+                        <a href="?type=logs&format=pdf" class="btn btn-pdf">PDF</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div style="text-align:center; margin: 3rem 0;">
+            <a href="admin_dashboard.php" style="color:var(--primary); font-weight:600; text-decoration:none;">
+                <i class="fas fa-arrow-left"></i> Retour au Dashboard
+            </a>
+        </div>
+
+    </div>
+<style>
+    .notifications-bell {
+        position: relative;
+        cursor: pointer;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+    }
+
+    .notifications-bell:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    .notification-badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: var(--danger);
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .notifications-dropdown {
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-md);
+        width: 320px;
+        max-height: 400px;
+        overflow-y: auto;
+        z-index: 1000;
+    }
+
+    .notifications-dropdown ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .notifications-dropdown li {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .notifications-dropdown li.non-lue {
+        background: rgba(233, 236, 239, 0.5);
+        font-weight: 500;
+    }
+
+    .notifications-dropdown li a {
+        text-decoration: none;
+        color: var(--gray-700);
+        display: block;
+    }
+
+    .notifications-dropdown li small {
+        color: var(--gray-500);
+        font-size: 0.85rem;
+    }
+
+    .dropdown-footer {
+        padding: 12px;
+        text-align: center;
+        border-top: 1px solid var(--gray-200);
+    }
+
+    .dropdown-footer a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 600;
+    }
+</style>
+
+<script>
+    function toggleNotifications() {
+        const dropdown = document.getElementById('notifications-dropdown');
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Fermer le dropdown si clic ailleurs
+    document.addEventListener('click', function(e) {
+        const bell = document.querySelector('.notifications-bell');
+        const dropdown = document.getElementById('notifications-dropdown');
+        if (!bell.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    // Marquer comme lu (appel AJAX simple - à améliorer si besoin)
+    function marquerLue(id) {
+        fetch('marquer_lue.php?id=' + id)
+            .then(() => {
+                // Option : rafraîchir le badge ou supprimer la classe non-lue
+            });
+    }
+</script>
 </body>
 </html>

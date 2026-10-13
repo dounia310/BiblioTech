@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once 'connexion.php';
-require_once 'header.php';
+ 
 
 // Vérifier si staff
 if (!isset($_SESSION['user_id']) || 
@@ -69,9 +69,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --primary: #2b848e;
-            --primary-dark: #1e6a72;
-            --success: #7ab781;
+             --primary: #1e3a5f;
+            --primary-light: #2d5a87;
+            --primary-dark: #152a45;
+            --accent: #e8b86d;
+            --light: #ffffff;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --success: #10b981;
             --danger: #c94f4f;
             --light: #f8f9fa;
             --dark: #254c5b;
@@ -224,6 +229,117 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <a href="dashboard.php">← Retour au tableau de bord</a>
     </div>
 </div>
+<style>
+    .notifications-bell {
+        position: relative;
+        cursor: pointer;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+    }
+
+    .notifications-bell:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    .notification-badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: var(--danger);
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .notifications-dropdown {
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-md);
+        width: 320px;
+        max-height: 400px;
+        overflow-y: auto;
+        z-index: 1000;
+    }
+
+    .notifications-dropdown ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .notifications-dropdown li {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .notifications-dropdown li.non-lue {
+        background: rgba(233, 236, 239, 0.5);
+        font-weight: 500;
+    }
+
+    .notifications-dropdown li a {
+        text-decoration: none;
+        color: var(--gray-700);
+        display: block;
+    }
+
+    .notifications-dropdown li small {
+        color: var(--gray-500);
+        font-size: 0.85rem;
+    }
+
+    .dropdown-footer {
+        padding: 12px;
+        text-align: center;
+        border-top: 1px solid var(--gray-200);
+    }
+
+    .dropdown-footer a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 600;
+    }
+</style>
+
+<script>
+    function toggleNotifications() {
+        const dropdown = document.getElementById('notifications-dropdown');
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Fermer le dropdown si clic ailleurs
+    document.addEventListener('click', function(e) {
+        const bell = document.querySelector('.notifications-bell');
+        const dropdown = document.getElementById('notifications-dropdown');
+        if (!bell.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    // Marquer comme lu (appel AJAX simple - à améliorer si besoin)
+    function marquerLue(id) {
+        fetch('marquer_lue.php?id=' + id)
+            .then(() => {
+                // Option : rafraîchir le badge ou supprimer la classe non-lue
+            });
+    }
+</script>
 
 </body>
 </html>

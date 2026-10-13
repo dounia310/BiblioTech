@@ -2,10 +2,9 @@
 
 require_once 'connexion.php';
 
-// DEBUT DU FICHIER - CORRIGÉ
-session_start();
 
-require_once 'connexion.php';
+
+require_once './header.php';
 
 // Protection membre uniquement - CORRIGÉ selon votre login.php
 if (!isset($_SESSION['user_id']) || ($_SESSION['type'] ?? '') !== 'membre') {

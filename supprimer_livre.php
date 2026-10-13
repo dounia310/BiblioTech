@@ -1,12 +1,6 @@
 <?php
 require_once 'connexion.php';
-require_once 'header.php';
 
-// Protection admin uniquement
-if (!isset($_SESSION['user_id']) || $_SESSION['type'] !== 'admin') {
-    header('Location: login.php');
-    exit;
-}
 
 $livre_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -52,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Erreur lors de la suppression : " . $e->getMessage();
     }
 }
+
 ?>
 
 <div class="container mt-5">

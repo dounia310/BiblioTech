@@ -995,7 +995,7 @@ $evenements = $pdo->query("
 
         <div class="hero-visual">
             <div class="hero-image-container">
-                <img src="./41289.jpg" 
+                <img src="./img.jpeg" 
                      alt="Bibliothèque en ligne" 
                      class="hero-main-image">
                 

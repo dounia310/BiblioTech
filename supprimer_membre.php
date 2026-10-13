@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once 'connexion.php';
-require_once 'header.php';
+
 
 // Protection staff
 if (!isset($_SESSION['user_id']) || 
@@ -62,8 +62,8 @@ if ($membre_id <= 0) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --primary: #2b848e;
-            --primary-dark: #1e6a72;
+            --primary: #1e3a5f;
+            --primary-dark: #152a45;
             --success: #7ab781;
             --danger: #c94f4f;
             --light: #f8f9fa;

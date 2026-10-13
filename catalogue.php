@@ -17,8 +17,6 @@ $total_stmt = $pdo->query("SELECT COUNT(*) FROM livres");
 $total_books = $total_stmt->fetchColumn();
 $total_pages = ceil($total_books / $limit);
 
-
-
 // 3. Récupération des données
 try {
     $stmt = $pdo->prepare("
@@ -63,10 +61,6 @@ $livres = $stmt->fetchAll(PDO::FETCH_ASSOC) ?? [];
     die("Erreur temporaire de la base de données. Réessayez dans quelques instants.");
 }
 
-
-
-
-
 // 4. CSRF
 if (!isset($_SESSION['csrf_reservation'])) {
     $_SESSION['csrf_reservation'] = bin2hex(random_bytes(32));
@@ -95,7 +89,6 @@ if (isset($_GET['debug_csrf'])) {
     
     <style>
         :root {
-            /* Palette Bibliotech - harmonisée avec header/footer */
             --primary: #1e3a5f;
             --primary-light: #2d5a87;
             --primary-dark: #152a45;
@@ -118,7 +111,6 @@ if (isset($_GET['debug_csrf'])) {
             --gray-700: #334155;
             --gray-800: #1e293b;
             
-            /* Ombres et transitions */
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -155,7 +147,6 @@ if (isset($_GET['debug_csrf'])) {
             padding: 0 24px; 
         }
 
-        /* ===== HERO SECTION ===== */
         .hero {
             background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
             color: white;
@@ -214,7 +205,6 @@ if (isset($_GET['debug_csrf'])) {
             color: var(--accent);
         }
 
-        /* ===== STATS ===== */
         .stats-section {
             margin-top: -3rem;
             position: relative;
@@ -275,7 +265,6 @@ if (isset($_GET['debug_csrf'])) {
             font-weight: 500;
         }
 
-        /* ===== CONTROLS / FILTRES ===== */
         .controls-section {
             margin: 3rem 0 2rem;
         }
@@ -327,6 +316,7 @@ if (isset($_GET['debug_csrf'])) {
             display: flex;
             gap: 1rem;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         .select-wrapper {
@@ -364,247 +354,307 @@ if (isset($_GET['debug_csrf'])) {
             pointer-events: none;
         }
 
-        /* ===== BOOKS GRID ===== */
-       
-    .books-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 2rem;
-    }
-
-    /* ===== CARTE DE LIVRE - CORRECTIONS ===== */
-    .book-card {
-        background: white;
-        border-radius: var(--radius-md);
-        overflow: hidden;
-        box-shadow: var(--shadow);
-        transition: all var(--transition-slow);
-        display: flex;
-        flex-direction: column;
-        border: 1px solid var(--gray-100);
-        position: relative;
-    }
-
-    .book-card:hover {
-        transform: translateY(-8px);
-        box-shadow: var(--shadow-xl);
-        border-color: var(--accent);
-    }
-
-    /* Badge Nouveau - correction classe */
-    .badge-nouveau {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-        background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: var(--radius-full);
-        font-size: 0.8rem;
-        font-weight: 700;
-        box-shadow: var(--shadow-md);
-        z-index: 2;
-    }
-
-    /* Couverture - correction classe */
-    .book-cover {
-        height: 260px;
-        background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-200) 100%);
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-    }
-
-    .book-cover img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform var(--transition-slow);
-    }
-
-    .book-card:hover .book-cover img {
-        transform: scale(1.05);
-    }
-
-    /* Fallback icône */
-    .book-cover .fa-book {
-        opacity: 0.5;
-        transition: opacity var(--transition);
-    }
-
-    .book-card:hover .book-cover .fa-book {
-        opacity: 0.7;
-    }
-
-    /* Informations - correction classe */
-    .book-info {
-        padding: 1.75rem;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-    }
-
-    /* Titre - correction classe */
-    .book-title {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.35rem;
-        font-weight: 600;
-        margin: 0 0 0.5rem;
-        line-height: 1.3;
-        color: var(--dark);
-    }
-
-    /* Auteur - correction classe */
-    .book-author {
-        color: var(--primary);
-        font-size: 0.95rem;
-        margin-bottom: 1rem;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .book-author::before {
-        content: '\f007';
-        font-family: 'Font Awesome 6 Free';
-        font-weight: 400;
-        font-size: 0.8rem;
-    }
-
-    /* Prix - nouvelle classe */
-    .book-price {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--primary);
-        margin-bottom: 0.75rem;
-    }
-
-    /* Rating - correction classe */
-    .book-rating {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .rating-stars {
-        display: flex;
-        gap: 0.15rem;
-    }
-
-    .rating-stars i {
-        color: var(--accent);
-        font-size: 0.85rem;
-    }
-
-    .rating-stars i.empty {
-        color: var(--gray-300);
-    }
-
-    .rating-value {
-        font-size: 0.85rem;
-        color: var(--gray-500);
-        font-weight: 500;
-    }
-
-    /* Actions - correction classe */
-    .book-actions {
-        display: flex;
-        gap: 0.75rem;
-        margin-top: auto;
-        padding-top: 1rem;
-        border-top: 1px solid var(--gray-100);
-    }
-
-    /* Boutons - correction classes */
-    .btn-detail {
-        flex: 1;
-        padding: 0.9rem;
-        border: none;
-        border-radius: var(--radius);
-        font-weight: 600;
-        cursor: pointer;
-        transition: all var(--transition);
-        text-align: center;
-        text-decoration: none;
-        font-size: 0.95rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        background: var(--gray-100);
-        color: var(--gray-700);
-    }
-
-    .btn-detail:hover {
-        background: var(--primary);
-        color: white;
-    }
-
-    .btn-add {
-        flex: 1;
-        padding: 0.9rem;
-        border: none;
-        border-radius: var(--radius);
-        font-weight: 600;
-        cursor: pointer;
-        transition: all var(--transition);
-        text-align: center;
-        text-decoration: none;
-        font-size: 0.95rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-        color: white;
-        box-shadow: var(--shadow);
-    }
-
-    .btn-add:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-    }
-     
-    /* Pagination */
-    .pagination a:hover {
-    opacity: 0.85;
-    transform: scale(1.05);
-}
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 992px) {
-        .books-grid {
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        .btn-reset {
+            padding: 1rem 1.5rem;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-full);
+            background: white;
+            color: var(--gray-600);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-    }
 
-    @media (max-width: 768px) {
-        .books-grid {
-            grid-template-columns: 1fr;
+        .btn-reset:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(232, 184, 109, 0.05);
         }
-        
+
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .book-card {
+            background: white;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all var(--transition-slow);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--gray-100);
+            position: relative;
+        }
+
+        .book-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--accent);
+        }
+
+        .book-card.hidden {
+            display: none;
+        }
+
+        .badge-nouveau {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            font-weight: 700;
+            box-shadow: var(--shadow-md);
+            z-index: 2;
+        }
+
         .book-cover {
-            height: 220px;
+            height: 260px;
+            background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-200) 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
         }
-        
-        .book-info {
-            padding: 1.5rem;
-        }
-        
-        .book-title {
-            font-size: 1.2rem;
-        }
-    }
 
-    @media (max-width: 480px) {
-        .book-actions {
+        .book-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform var(--transition-slow);
+        }
+
+        .book-card:hover .book-cover img {
+            transform: scale(1.05);
+        }
+
+        .book-info {
+            padding: 1.75rem;
+            flex: 1;
+            display: flex;
             flex-direction: column;
         }
-    }
-</style>
+
+        .book-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.35rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem;
+            line-height: 1.3;
+            color: var(--dark);
+        }
+
+        .book-author {
+            color: var(--primary);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .book-author::before {
+            content: '\f007';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 400;
+            font-size: 0.8rem;
+        }
+
+        .book-price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .book-rating {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 0.15rem;
+        }
+
+        .rating-stars i {
+            color: var(--accent);
+            font-size: 0.85rem;
+        }
+
+        .rating-stars i.empty {
+            color: var(--gray-300);
+        }
+
+        .rating-value {
+            font-size: 0.85rem;
+            color: var(--gray-500);
+            font-weight: 500;
+        }
+
+        .book-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: auto;
+            padding-top: 1rem;
+            border-top: 1px solid var(--gray-100);
+        }
+
+        .btn-detail {
+            flex: 1;
+            padding: 0.9rem;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            text-align: center;
+            text-decoration: none;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .btn-detail:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-add {
+            flex: 1;
+            padding: 0.9rem;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            text-align: center;
+            text-decoration: none;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            grid-column: 1 / -1;
+            color: var(--gray-500);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: var(--gray-300);
+        }
+
+        .pagination {
+            text-align: center;
+            margin: 3rem 0;
+            font-size: 1.1rem;
+        }
+
+        .pagination a {
+            margin: 0 8px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: #e2e8f0;
+            color: var(--dark);
+            text-decoration: none;
+            transition: all var(--transition);
+            display: inline-block;
+        }
+
+        .pagination a:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .pagination a.active {
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+        }
+
+        @media (max-width: 992px) {
+            .books-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .books-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .book-cover {
+                height: 220px;
+            }
+            
+            .book-info {
+                padding: 1.5rem;
+            }
+            
+            .book-title {
+                font-size: 1.2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-box {
+                flex: 1 1 auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .book-actions {
+                flex-direction: column;
+            }
+            
+            .filter-group {
+                width: 100%;
+            }
+            
+            .select-wrapper, .btn-reset {
+                width: 100%;
+            }
+            
+            .select {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -654,7 +704,7 @@ if (isset($_GET['debug_csrf'])) {
         <div class="controls">
             <div class="search-box">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" id="search" class="search-input" placeholder="Rechercher par titre, auteur...">
+                <input type="text" id="search" class="search-input" placeholder="Rechercher par titre, auteur..." autocomplete="off">
             </div>
             <div class="filter-group">
                 <div class="select-wrapper">
@@ -666,15 +716,16 @@ if (isset($_GET['debug_csrf'])) {
                     </select>
                 </div>
                 <div class="select-wrapper">
-                <select id="sort" class="select">
-                    <option value="pop">Popularité</option>
-                    <option value="title">Titre (A-Z)</option>
-                    <option value="year">Année (récent)</option>
-                    <option value="price_asc">Prix croissant</option>
-                    <option value="price_desc">Prix décroissant</option>
-                </select>
-</div>
+                    <select id="sort" class="select">
+                        <option value="new">Nouveautés</option>
+                        <option value="title">Titre (A-Z)</option>
+                        <option value="price_asc">Prix croissant</option>
+                        <option value="price_desc">Prix décroissant</option>
+                    </select>
                 </div>
+                <button type="button" onclick="resetFilters()" class="btn-reset">
+                    <i class="fas fa-undo"></i> Réinitialiser
+                </button>
             </div>
         </div>
     </div>
@@ -685,7 +736,7 @@ if (isset($_GET['debug_csrf'])) {
     <div class="container">
         <div class="books-grid" id="grid">
             <?php if (empty($livres)): ?>
-                <div class="empty-state">
+                <div class="empty-state" id="no-books">
                     <i class="fas fa-book-open"></i>
                     <h3>Aucun livre trouvé</h3>
                     <p>Revenez bientôt ou modifiez vos filtres.</p>
@@ -706,7 +757,8 @@ if (isset($_GET['debug_csrf'])) {
                         <div class="book-cover">
                             <?php if (!empty($l['couverture_url'])): ?>
                                 <img src="<?= htmlspecialchars($l['couverture_url']) ?>" 
-                                     alt="Couverture <?= htmlspecialchars($l['titre']) ?>">
+                                     alt="Couverture <?= htmlspecialchars($l['titre']) ?>"
+                                     loading="lazy">
                             <?php else: ?>
                                 <div style="height:100%;display:flex;align-items:center;justify-content:center;color:#94a3b8;">
                                     <i class="fas fa-book fa-5x"></i>
@@ -737,11 +789,15 @@ if (isset($_GET['debug_csrf'])) {
                             </div>
 
                             <div class="book-actions">
-                                <a href="details_livre.php?id=<?= $l['id'] ?>" class="btn-detail">Détails</a>
+                                <a href="details_livre.php?id=<?= $l['id'] ?>" class="btn-detail">
+                                    <i class="fas fa-eye"></i> Détails
+                                </a>
                                 <form action="panier.php" method="post" style="flex:1">
                                     <input type="hidden" name="action" value="add">
                                     <input type="hidden" name="livre_id" value="<?= $l['id'] ?>">
-                                    <button type="submit" class="btn-add">Ajouter au panier</button>
+                                    <button type="submit" class="btn-add">
+                                        <i class="fas fa-cart-plus"></i> Ajouter
+                                    </button>
                                 </form>
                             </div>
                         </div>
@@ -750,83 +806,123 @@ if (isset($_GET['debug_csrf'])) {
             <?php endif; ?>
         </div>
     </div>
+    
     <!-- Pagination -->
-<?php if ($total_pages > 1): ?>
-    <div class="pagination" style="text-align: center; margin: 3rem 0; font-size: 1.1rem;">
-        <?php if ($page > 1): ?>
-            <a href="?page=<?= $page - 1 ?>" style="margin: 0 10px; color: var(--primary); text-decoration: none; font-weight: bold;">« Précédent</a>
-        <?php endif; ?>
+    <?php if ($total_pages > 1): ?>
+        <div class="container">
+            <div class="pagination">
+                <?php if ($page > 1): ?>
+                    <a href="?page=<?= $page - 1 ?>">« Précédent</a>
+                <?php endif; ?>
 
-        <?php
-        // Afficher quelques numéros de page (ex: 1 ... 4 5 6 ... 12)
-        $range = 2; // pages à montrer de chaque côté de la page courante
-        for ($i = max(1, $page - $range); $i <= min($total_pages, $page + $range); $i++):
-        ?>
-            <a href="?page=<?= $i ?>" 
-               style="margin: 0 8px; padding: 8px 14px; border-radius: 8px; 
-                      background: <?= $i === $page ? 'var(--primary)' : '#e2e8f0' ?>; 
-                      color: <?= $i === $page ? 'white' : 'var(--dark)' ?>; 
-                      text-decoration: none; font-weight: <?= $i === $page ? 'bold' : 'normal' ?>;">
-                <?= $i ?>
-            </a>
-        <?php endfor; ?>
+                <?php
+                $range = 2;
+                for ($i = max(1, $page - $range); $i <= min($total_pages, $page + $range); $i++):
+                ?>
+                    <a href="?page=<?= $i ?>" class="<?= $i === $page ? 'active' : '' ?>">
+                        <?= $i ?>
+                    </a>
+                <?php endfor; ?>
 
-        <?php if ($page < $total_pages): ?>
-            <a href="?page=<?= $page + 1 ?>" style="margin: 0 10px; color: var(--primary); text-decoration: none; font-weight: bold;">Suivant »</a>
-        <?php endif; ?>
-    </div>
-<?php endif; ?>
+                <?php if ($page < $total_pages): ?>
+                    <a href="?page=<?= $page + 1 ?>">Suivant »</a>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php endif; ?>
+</main>
 
 <script>
+// Stocker toutes les cartes au chargement
+let allCards = [];
+let noResultsMsg = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    allCards = Array.from(document.querySelectorAll('.book-card'));
+    
+    // Créer le message "aucun résultat" s'il n'existe pas déjà
+    if (!document.getElementById('no-results')) {
+        noResultsMsg = document.createElement('div');
+        noResultsMsg.id = 'no-results';
+        noResultsMsg.className = 'empty-state';
+        noResultsMsg.style.display = 'none';
+        noResultsMsg.innerHTML = `
+            <i class="fas fa-search"></i>
+            <h3>Aucun résultat</h3>
+            <p>Essayez avec d'autres critères de recherche.</p>
+        `;
+        document.getElementById('grid').appendChild(noResultsMsg);
+    }
+});
+
 function filterBooks() {
     const query = document.getElementById('search').value.toLowerCase().trim();
     const category = document.getElementById('category').value.toLowerCase();
     const sortValue = document.getElementById('sort').value;
-
-    let cards = Array.from(document.querySelectorAll('.book-card'));
-
-    // Filtrage  
-    cards = cards.filter(card => {
-        const title  = card.dataset.title;
-        const author = card.dataset.author;
-        const cats   = card.dataset.cat;
-
-        return (!query || title.includes(query) || author.includes(query)) &&
-               (!category || cats.includes(category));
-    });
-
-    // Tri selon la valeur sélectionnée
-    if (sortValue === 'title') {
-        cards.sort((a, b) => a.dataset.title.localeCompare(b.dataset.title));
-    }
-    else if (sortValue === 'year') {
-        cards.sort((a, b) => Number(b.dataset.year) - Number(a.dataset.year));
-    }
-    else if (sortValue === 'price_asc') {
-        cards.sort((a, b) => Number(a.dataset.price) - Number(b.dataset.price));
-    }
-    else if (sortValue === 'price_desc') {
-        cards.sort((a, b) => Number(b.dataset.price) - Number(a.dataset.price));
-    }
-    else {
-        // Par défaut : popularité (ou created_at si tu préfères)
-        cards.sort((a, b) => Number(b.dataset.pop) - Number(a.dataset.pop));
-    }
-
     const grid = document.getElementById('grid');
-    if (cards.length === 0) {
-        grid.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-search"></i>
-                <h3>Aucun résultat</h3>
-                <p>Essayez avec d'autres critères de recherche.</p>
-            </div>
-        `;
+    
+    // Filtrer les cartes
+    let visibleCards = allCards.filter(card => {
+        const title = card.dataset.title || '';
+        const author = card.dataset.author || '';
+        const cats = card.dataset.cat || '';
+        
+        const matchSearch = !query || title.includes(query) || author.includes(query);
+        const matchCategory = !category || cats.includes(category);
+        
+        return matchSearch && matchCategory;
+    });
+    
+    // Trier les cartes visibles
+    switch(sortValue) {
+        case 'title':
+            visibleCards.sort((a, b) => {
+                const titleA = a.dataset.title || '';
+                const titleB = b.dataset.title || '';
+                return titleA.localeCompare(titleB);
+            });
+            break;
+        case 'price_asc':
+            visibleCards.sort((a, b) => Number(a.dataset.price) - Number(b.dataset.price));
+            break;
+        case 'price_desc':
+            visibleCards.sort((a, b) => Number(b.dataset.price) - Number(a.dataset.price));
+            break;
+        case 'new':
+        default:
+            visibleCards.sort((a, b) => new Date(b.dataset.date) - new Date(a.dataset.date));
+            break;
+    }
+    
+    // Cacher toutes les cartes d'abord
+    allCards.forEach(card => {
+        card.classList.add('hidden');
+        card.style.order = '';
+    });
+    
+    // Afficher et réordonner les cartes filtrées
+    visibleCards.forEach((card, index) => {
+        card.classList.remove('hidden');
+        card.style.order = index;
+    });
+    
+    // Gérer le message "aucun résultat"
+    const noResults = document.getElementById('no-results');
+    if (visibleCards.length === 0) {
+        noResults.style.display = 'block';
     } else {
-        grid.replaceChildren(...cards);
+        noResults.style.display = 'none';
     }
 }
 
+function resetFilters() {
+    document.getElementById('search').value = '';
+    document.getElementById('category').value = '';
+    document.getElementById('sort').value = 'new';
+    filterBooks();
+}
+
+// Event listeners
 document.getElementById('search').addEventListener('input', filterBooks);
 document.getElementById('category').addEventListener('change', filterBooks);
 document.getElementById('sort').addEventListener('change', filterBooks);

@@ -435,11 +435,11 @@
         <div class="footer-section">
             <h3>Liens rapides</h3>
             <ul class="footer-links">
-                <li><a href="index.php"><i class="fas fa-chevron-right" style="font-size: 0.7rem; color: var(--accent);"></i> Accueil</a></li>
-                <li><a href="catalogue.php"><i class="fas fa-chevron-right" style="font-size: 0.7rem; color: var(--accent);"></i> Catalogue</a></li>
-                <li><a href="nouveautes.php"><i class="fas fa-chevron-right" style="font-size: 0.7rem; color: var(--accent);"></i> Nouveautés</a></li>
-                <li><a href="promotions.php"><i class="fas fa-chevron-right" style="font-size: 0.7rem; color: var(--accent);"></i> Promotions</a></li>
-                <li><a href="evenements.php"><i class="fas fa-chevron-right" style="font-size: 0.7rem; color: var(--accent);"></i> Événements</a></li>
+                <li><a href="index.php"><i class="fas fa-chevron-right"></i> Accueil</a></li>
+                <li><a href="catalogue.php"><i class="fas fa-chevron-right"></i> Catalogue</a></li>
+                <li><a href="actualites.php"><i class="fas fa-chevron-right"></i> Actualités</a></li>
+                <li><a href="evenements.php"><i class="fas fa-chevron-right"></i> Événements</a></li>
+                <li><a href="contact.php"><i class="fas fa-chevron-right"></i> Contact</a></li>
             </ul>
         </div>
         
@@ -447,53 +447,43 @@
         <div class="footer-section">
             <h3>Informations</h3>
             <ul class="footer-links">
-                <li><a href="contact.php"><i class="fas fa-chevron-right" style="font-size: 0.7rem; color: var(--accent);"></i> Contact</a></li>
-                <li><a href="conditions.php"><i class="fas fa-chevron-right" style="font-size: 0.7rem; color: var(--accent);"></i> Conditions d'utilisation</a></li>
-                <li><a href="confidentialite.php"><i class="fas fa-chevron-right" style="font-size: 0.7rem; color: var(--accent);"></i> Politique de confidentialité</a></li>
-                <li><a href="faq.php"><i class="fas fa-chevron-right" style="font-size: 0.7rem; color: var(--accent);"></i> FAQ</a></li>
-                <li><a href="aide.php"><i class="fas fa-chevron-right" style="font-size: 0.7rem; color: var(--accent);"></i> Aide</a></li>
+                <li><a href="aide.php"><i class="fas fa-chevron-right"></i> Aide</a></li>
+                <li><a href="faq.php"><i class="fas fa-chevron-right"></i> FAQ</a></li>
+                <li><a href="conditions.php"><i class="fas fa-chevron-right"></i> Conditions d'utilisation</a></li>
+                <li><a href="confidentialite.php"><i class="fas fa-chevron-right"></i> Politique de confidentialité</a></li>
+                
             </ul>
         </div>
         
-        <!-- Contact -->
+        <!-- Contact – mêmes infos que le header + adresse Marrakech -->
         <div class="footer-section">
             <h3>Contactez-nous</h3>
             <ul class="footer-contact">
                 <li>
                     <i class="fas fa-map-marker-alt"></i>
-                    <span>123 Rue de la Bibliothèque, Casablanca, Maroc</span>
+                    <span>456 Avenue Mohammed V, Guéliz, Marrakech, Maroc</span>
                 </li>
                 <li>
                     <i class="fas fa-phone-alt"></i>
-                    <span>05 22 12 34 56</span>
+                    <span>+212 6 234 567 89</span>
                 </li>
                 <li>
-                    <i class="fas fa-envelope"></i>
-                    <span>contact@bibliotech.ma</span>
-                </li>
+    <i class="fas fa-envelope"></i>
+    <a href="mailto:contact@bibliotech.ma">contact@bibliotech.ma</a>
+</li>
                 <li>
                     <i class="fas fa-clock"></i>
-                    <span>Lun-Ven: 9h-18h, Sam: 10h-16h</span>
+                    <span>Lun-Sam: 9h-19h</span>
                 </li>
             </ul>
             
-            <div class="payment-section">
-                <div class="payment-title">Paiement sécurisé</div>
-                <div class="payment-methods">
-                    <span class="payment-method"><i class="fas fa-credit-card"></i> CMI</span>
-                    <span class="payment-method"><i class="fab fa-cc-visa"></i> Visa</span>
-                    <span class="payment-method"><i class="fab fa-cc-mastercard"></i> MC</span>
-                    <span class="payment-method"><i class="fab fa-paypal"></i> PayPal</span>
-                </div>
-            </div>
-        </div>
     </div>
     
-    <!-- Footer bottom -->
+    <!-- Bas de footer -->
     <div class="footer-bottom">
         <div class="container">
             <p class="footer-copyright">
-                &copy; <?= date('Y') ?> <strong>Bibliotech</strong>. Tous droits réservés.
+                © <?= date('Y') ?> <strong>Bibliotech</strong>. Tous droits réservés.
             </p>
             <div class="footer-legal">
                 <a href="mentions-legales.php">Mentions légales</a>
@@ -503,6 +493,3 @@
         </div>
     </div>
 </footer>
-
-</body>
-</html>

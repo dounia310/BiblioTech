@@ -2,57 +2,86 @@
 session_start();
 require_once 'connexion.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php?redirect=' . urlencode($_SERVER['REQUEST_URI']));
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $livre_id = (int)($_POST['livre_id'] ?? 0);
-    $type     = $_POST['type'] ?? 'achat';
-    $quantite = max(1, (int)($_POST['quantite'] ?? 1));
-
-    if ($livre_id <= 0) {
-        $_SESSION['error_message'] = "Livre invalide.";
-        header('Location: details_livre.php?id=' . $livre_id);
-        exit;
-    }
-
+// Vérifier si l'ID du livre est passé
+if (isset($_POST['livre_id']) || isset($_GET['livre_id'])) {
+    $livre_id = isset($_POST['livre_id']) ? $_POST['livre_id'] : $_GET['livre_id'];
+    $quantite = isset($_POST['quantite']) ? intval($_POST['quantite']) : 1;
+    
+    // Récupérer les informations du livre depuis la base de données
     try {
-        // Vérifier si déjà dans le panier
-        $stmt = $pdo->prepare("
-            SELECT id, quantite 
-            FROM panier_items 
-            WHERE user_id = ? AND livre_id = ? AND type = ?
-        ");
-        $stmt->execute([$_SESSION['user_id'], $livre_id, $type]);
-        $existant = $stmt->fetch();
-
-        if ($existant) {
-            // Mise à jour quantité
-            $nouvelle_quantite = $existant['quantite'] + $quantite;
-            $stmt = $pdo->prepare("
-                UPDATE panier_items 
-                SET quantite = ?, date_ajout = NOW()
-                WHERE id = ?
-            ");
-            $stmt->execute([$nouvelle_quantite, $existant['id']]);
-        } else {
-            // Nouvel ajout
-            $stmt = $pdo->prepare("
-                INSERT INTO panier_items 
-                (user_id, livre_id, type, quantite, date_ajout)
-                VALUES (?, ?, ?, ?, NOW())
-            ");
-            $stmt->execute([$_SESSION['user_id'], $livre_id, $type, $quantite]);
-        }
-
-        $_SESSION['success_message'] = "Article ajouté au panier !";
+        $sql = "SELECT l.*, a.nom as auteur_nom, a.prenom as auteur_prenom 
+                FROM livres l 
+                LEFT JOIN auteurs a ON l.auteur_id = a.id 
+                WHERE l.id = ?";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$livre_id]);
+        $livre = $stmt->fetch(PDO::FETCH_ASSOC);
         
-    } catch (Exception $e) {
-        $_SESSION['error_message'] = "Erreur : " . $e->getMessage();
+        if ($livre) {
+            // Initialiser le panier s'il n'existe pas
+            if (!isset($_SESSION['cart'])) {
+                $_SESSION['cart'] = [];
+            }
+            
+            // Vérifier si le livre est déjà dans le panier
+            $found = false;
+            foreach ($_SESSION['cart'] as &$item) {
+                if ($item['id'] == $livre_id) {
+                    // Augmenter la quantité
+                    $item['quantity'] += $quantite;
+                    $item['total'] = $item['quantity'] * $item['prix'];
+                    $found = true;
+                    break;
+                }
+            }
+            
+            // Si le livre n'est pas encore dans le panier
+            if (!$found) {
+                $item = [
+                    'id' => $livre['id'],
+                    'titre' => $livre['titre'],
+                    'auteur' => $livre['auteur_nom'] . ' ' . $livre['auteur_prenom'],
+                    'prix' => $livre['prix'] ?? 0,
+                    'image' => $livre['image'] ?? 'default.jpg',
+                    'quantity' => $quantite,
+                    'total' => ($livre['prix'] ?? 0) * $quantite
+                ];
+                $_SESSION['cart'][] = $item;
+            }
+            
+            // Calculer le nombre total d'articles dans le panier
+            $totalItems = 0;
+            foreach ($_SESSION['cart'] as $item) {
+                $totalItems += $item['quantity'];
+            }
+            
+            // Stocker le total dans la session
+            $_SESSION['cart_total_items'] = $totalItems;
+            
+            // Message de succès
+            $_SESSION['success_message'] = "Le livre a été ajouté au panier !";
+            
+            // Rediriger vers la page précédente ou le panier
+            $redirect_url = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : 'catalogue.php';
+            header("Location: $redirect_url");
+            exit();
+            
+        } else {
+            $_SESSION['error_message'] = "Livre non trouvé !";
+            header("Location: catalogue.php");
+            exit();
+        }
+        
+    } catch (PDOException $e) {
+        error_log("Erreur PDO: " . $e->getMessage());
+        $_SESSION['error_message'] = "Une erreur est survenue lors de l'ajout au panier.";
+        header("Location: catalogue.php");
+        exit();
     }
+    
+} else {
+    $_SESSION['error_message'] = "ID du livre manquant !";
+    header("Location: catalogue.php");
+    exit();
 }
-
-header('Location: panier.php');
-exit;
+?>

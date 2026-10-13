@@ -314,7 +314,7 @@ p:where(:not([style])):has(+ table + p) {
     </table>
 <?php endif; ?>
 
-<p style="margin-top:20px;"><a href="membre_dashboard.php">← Retour à mon espace</a></p>
+<p style="margin-top:20px;"><a href="./membre_compte.php">← Retour à mon espace</a></p>
 
 <?php require_once 'footer.php'; ?>
 

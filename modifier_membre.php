@@ -107,9 +107,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier'])) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --primary: #2b848e;
-            --primary-dark: #1e6a72;
-            --success: #28a745;
+           --primary: #1e3a5f;
+            --primary-light: #2d5a87;
+            --primary-dark: #152a45;
+            --success: #10b981;
             --danger: #dc3545;
             --light: #f8f9fa;
             --dark: #254c5b;

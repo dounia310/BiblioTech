@@ -166,9 +166,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['change_password'])) {
     <style>
     /* Variables CSS avec vos couleurs */
     :root {
-        --primary: #2b848e;
-        --primary-light: #3a9aa5;
-        --primary-lighter: #e1f0f2;
+        --primary: #1e3a5f;
+            --primary-light: #2d5a87;
+            --primary-lighter: #152a45;
+            --success: #10b981;
         --secondary: #7ab781;
         --secondary-light: #8cc793;
         --secondary-lighter: #e9f5ea;

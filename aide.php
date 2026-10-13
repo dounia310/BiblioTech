@@ -158,7 +158,7 @@ require_once 'header.php';
     <div class="contact-box">
         <h3>Besoin d’aide supplémentaire ?</h3>
         <p>Écrivez-nous à : <strong>support@bibliotech.ma</strong><br>
-           WhatsApp : +212 6 XX XX XX XX<br>
+           WhatsApp : +212 6 44444448<br>
            (Lundi–Samedi, 9h–19h)</p>
         <a href="contact.php" class="contact-btn">
             <i class="fas fa-envelope"></i> Nous contacter
